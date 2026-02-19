@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarbonLens AI - Industrial Carbon Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --secondary: #0ea5e9;
+            --danger: #ef4444; --warning: #f59e0b; --success: #10b981;
+            --accent: #8b5cf6; --dark: #1e293b; --gray: #64748b;
+            --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+            color: var(--dark); line-height: 1.6; min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            text-align: center; padding: 2rem 0;
+        }
+        .header h1 {
+            font-size: 2.5rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+        }
+        .card {
+            background: white; border-radius: 16px; padding: 1.5rem;
+            box-shadow: var(--shadow-lg); margin-bottom: 1.5rem; border: 1px solid #e2e8f0;
+        }
+        .grid { display: grid; gap: 1.5rem; }
+        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+        
+        .btn {
+            padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;
+            cursor: pointer; border: none; transition: all 0.3s;
+            display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; width: 100%; justify-content: center; padding: 1rem; font-size: 1.1rem;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); }
+        
+        .form-section { margin-bottom: 1.5rem; }
+        .form-section h3 {
+            color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .form-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;
+        }
+        .form-group label {
+            display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--gray);
+        }
+        .form-group input {
+            width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px;
+            font-size: 1rem; transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none; border-color: var(--primary);
+        }
+        
+        .kpi-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+            border: 2px solid #d1fae5; border-radius: 12px; padding: 1.5rem; text-align: center;
+        }
+        .kpi-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1rem; font-size: 1.5rem; color: white;
+        }
+        .kpi-value { font-size: 2rem; font-weight: 700; color: var(--dark); }
+        .kpi-label { color: var(--gray); font-size: 0.875rem; margin-top: 0.25rem; }
+        
+        .chart-container { position: relative; height: 300px; }
+        .scope-pill {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+        }
+        .scope-1 { background: #fef2f2; color: #dc2626; }
+        .scope-2 { background: #fffbeb; color: #d97706; }
+        .scope-3 { background: #eff6ff; color: #2563eb; }
+        
+        .hotspot-item {
+            display: flex; align-items: center; padding: 0.75rem; border-bottom: 1px solid #e2e8f0;
+        }
+        .hotspot-rank {
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.875rem; margin-right: 1rem;
+        }
+        .hotspot-bar {
+            flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px;
+            margin: 0 1rem; overflow: hidden;
+        }
+        .hotspot-fill { height: 100%; border-radius: 4px; }
+        
+        .scenario-card {
+            border: 2px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;
+        }
+        .badge {
+            display: inline-flex; align-items: center; padding: 0.25rem 0.5rem;
+            border-radius: 4px; font-size: 0.75rem; font-weight: 600;
+        }
+        .badge-success { background: #dcfce7; color: #166534; }
+        
+        .cost-highlight {
+            background: linear-gradient(135deg, #faf5ff 0%, #ffffff 100%);
+            border: 2px solid #e9d5ff; border-radius: 12px; padding: 1.5rem; text-align: center;
+        }
+        .cost-amount { font-size: 2.5rem; font-weight: 700; color: var(--accent); }
+        
+        .fade-in { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.75rem; flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-industry"></i> CarbonLens AI</h1>
+            <p style="color: var(--gray); font-size: 1.1rem;">Industrial Carbon Footprint Tracker with Cost Analysis</p>
+        </div>
+
+        <!-- INPUT FORM -->
+        <div class="card">
+            <h2 style="margin-bottom: 1.5rem;"><i class="fas fa-edit" style="color: var(--primary);"></i> Enter Emission Data</h2>
+            <form method="POST">
+                <!-- Scope 1 -->
+                <div class="form-section">
+                    <h3 style="color: var(--danger);"><i class="fas fa-fire"></i> Direct Emissions (Fuel & Process)</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Diesel (litres)</label><input type="number" step="0.1" name="diesel" value="5000"></div>
+                        <div class="form-group"><label>Petrol (litres)</label><input type="number" step="0.1" name="petrol" value="1200"></div>
+                        <div class="form-group"><label>Natural Gas (SCM)</label><input type="number" step="0.1" name="natural_gas" value="8000"></div>
+                        <div class="form-group"><label>Coal (tonnes)</label><input type="number" step="0.01" name="coal" value="45"></div>
+                        <div class="form-group"><label>LPG (litres)</label><input type="number" step="0.1" name="lpg" value="2000"></div>
+                        <div class="form-group"><label>R-22 (kg)</label><input type="number" step="0.1" name="refrigerant_r22" value="0"></div>
+                        <div class="form-group"><label>R-410A (kg)</label><input type="number" step="0.1" name="refrigerant_r410a" value="0"></div>
+                        <div class="form-group"><label>R-134A (kg)</label><input type="number" step="0.1" name="refrigerant_r134a" value="0"></div>
+                    </div>
+                </div>
+
+                <!-- Scope 2 -->
+                <div class="form-section">
+                    <h3 style="color: var(--warning);"><i class="fas fa-bolt"></i> Purchased Electricity</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Electricity (kWh)</label><input type="number" step="0.1" name="electricity" value="150000"></div>
+                        <div class="form-group"><label>Renewable %</label><input type="number" step="0.1" name="renewable" value="20" min="0" max="100"></div>
+                    </div>
+                </div>
+
+                <!-- Scope 3 -->
+                <div class="form-section">
+                    <h3 style="color: var(--secondary);"><i class="fas fa-truck"></i> Indirect Emissions</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Steel (tonnes)</label><input type="number" step="0.01" name="steel" value="120"></div>
+                        <div class="form-group"><label>Cement (tonnes)</label><input type="number" step="0.01" name="cement" value="80"></div>
+                        <div class="form-group"><label>Aluminum (tonnes)</label><input type="number" step="0.01" name="aluminum" value="25"></div>
+                        <div class="form-group"><label>Plastic (tonnes)</label><input type="number" step="0.01" name="plastic" value="15"></div>
+                        <div class="form-group"><label>Paper (tonnes)</label><input type="number" step="0.01" name="paper" value="10"></div>
+                        <div class="form-group"><label>Glass (tonnes)</label><input type="number" step="0.01" name="glass" value="5"></div>
+                        <div class="form-group"><label>Road Transport (tonne-km)</label><input type="number" step="0.1" name="logistics_truck" value="50000"></div>
+                        <div class="form-group"><label>Shipping (tonne-km)</label><input type="number" step="0.1" name="logistics_ship" value="0"></div>
+                        <div class="form-group"><label>Air Freight (tonne-km)</label><input type="number" step="0.1" name="logistics_air" value="5000"></div>
+                        <div class="form-group"><label>Waste to Landfill (tonnes)</label><input type="number" step="0.01" name="waste_landfill" value="12"></div>
+                        <div class="form-group"><label>Waste Recycled (tonnes)</label><input type="number" step="0.01" name="waste_recycled" value="8"></div>
+                    </div>
+                </div>
+
+                <!-- Production -->
+                <div class="form-section">
+                    <h3 style="color: var(--success);"><i class="fas fa-industry"></i> Production Output</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Production Units</label><input type="number" step="0.1" name="production" value="10000"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary"><i class="fas fa-calculator"></i> Calculate Carbon Footprint</button>
+            </form>
+        </div>
+
+        {% if result %}
+        <!-- Prepare safe data for charts -->
+        {% set scenario_names = [] %}
+        {% set scenario_rois = [] %}
+        {% for scenario in result.scenarios %}
+            {% set _ = scenario_names.append(scenario.name | default('Unnamed')) %}
+            {% set roi_val = scenario.roi | default(scenario.roi_percent | default(0)) %}
+            {% set _ = scenario_rois.append(roi_val | float) %}
+        {% endfor %}
+
+        <!-- RESULTS DASHBOARD -->
+        <div class="fade-in">
+            <!-- KPI Cards -->
+            <div class="grid grid-4">
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background: var(--primary);"><i class="fas fa-cloud"></i></div>
+                    <div class="kpi-value">{{ result.total }}</div>
+                    <div class="kpi-label">Total Emissions (tCO₂e)</div>
+                    <div style="margin-top: 0.5rem;"><span class="scope-pill scope-1">{{ result.scope1 }}</span></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background: var(--warning);"><i class="fas fa-bolt"></i></div>
+                    <div class="kpi-value">{{ result.scope2 }}</div>
+                    <div class="kpi-label">Electricity (tCO₂e)</div>
+                    <div style="margin-top: 0.5rem;"><span class="scope-pill scope-2">{{ result.renewable }}% Renewable</span></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background: var(--secondary);"><i class="fas fa-truck"></i></div>
+                    <div class="kpi-value">{{ result.scope3 }}</div>
+                    <div class="kpi-label">Indirect (tCO₂e)</div>
+                    <div style="margin-top: 0.5rem;"><span class="scope-pill scope-3">Supply Chain</span></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background: var(--accent);"><i class="fas fa-chart-line"></i></div>
+                    <div class="kpi-value">{{ result.intensity }}</div>
+                    <div class="kpi-label">Emission Intensity (tCO₂e/unit)</div>
+                    <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--gray);">{{ result.production|int }} units</div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;"><i class="fas fa-chart-pie" style="color: var(--primary);"></i> Emissions by Scope</h3>
+                    <div class="chart-container"><canvas id="scopeChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;"><i class="fas fa-chart-bar" style="color: var(--secondary);"></i> Emissions by Source</h3>
+                    <div class="chart-container"><canvas id="sourceChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Cost Analysis & Hotspots -->
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;"><i class="fas fa-rupee-sign" style="color: var(--accent);"></i> Cost to Carbon Analysis</h3>
+                    <div class="cost-highlight" style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.875rem; color: var(--gray);">Annual Carbon Cost</div>
+                        <div class="cost-amount">₹{{ result.carbon_cost }}</div>
+                        <div style="font-size: 0.75rem; color: var(--gray);">@ ₹2,500 per tCO₂e</div>
+                    </div>
+                    <div style="height: 250px;"><canvas id="costChart"></canvas></div>
+                </div>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;"><i class="fas fa-fire" style="color: var(--danger);"></i> Top 5 Emission Hotspots</h3>
+                    {% for hotspot in result.hotspots %}
+                    <div class="hotspot-item">
+                        <div class="hotspot-rank" style="background: {% if loop.index == 1 %}#fecaca; color: #991b1b;{% elif loop.index == 2 %}#fed7aa; color: #9a3412;{% elif loop.index == 3 %}#fef08a; color: #854d0e;{% else %}#e2e8f0; color: #475569;{% endif %}">{{ loop.index }}</div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span style="font-weight: 500;">{{ hotspot.source }}</span>
+                                <span style="font-weight: 600;">{{ "%.1f"|format(hotspot.emission) }} t</span>
+                            </div>
+                            <div class="hotspot-bar">
+                                <div class="hotspot-fill" style="width: {{ hotspot.percent }}%; background: {% if loop.index == 1 %}var(--danger){% elif loop.index == 2 %}var(--warning){% else %}var(--primary){% endif %};"></div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--gray); margin-top: 0.25rem;">{{ "%.1f"|format(hotspot.percent) }}% of total</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Scenarios -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;"><i class="fas fa-flask" style="color: var(--secondary);"></i> AI-Generated Reduction Scenarios Based on Your Data</h3>
+                <div class="grid grid-2">
+                    <div>
+                        {% for scenario in result.scenarios %}
+                        <div class="scenario-card" style="{% if scenario.get('is_combined') %}border-color: var(--primary); background: #f0fdf4;{% endif %}">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <div style="font-weight: 600; {% if scenario.get('is_combined') %}color: var(--primary);{% endif %}">{{ scenario.name | default('Unnamed Scenario') }}</div>
+                                <div>
+                                    {% if scenario.priority | default('') == 'High' %}
+                                        <span class="badge badge-success">High Priority</span>
+                                    {% elif scenario.priority | default('') == 'Recommended' %}
+                                        <span class="badge" style="background: #dbeafe; color: #1e40af;">Recommended</span>
+                                    {% else %}
+                                        <span class="badge" style="background: #fef3c7; color: #92400e;">Medium</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div style="font-size: 0.875rem; color: var(--gray); margin-bottom: 0.5rem;">{{ scenario.description | default('') }}</div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.875rem;">
+                                <div><span style="color: var(--gray);">Investment:</span> <strong>₹{{ "{:,.0f}".format(scenario.investment | default(0)) }}</strong></div>
+                                <div><span style="color: var(--gray);">Annual Savings:</span> <strong style="color: var(--success);">₹{{ "{:,.0f}".format(scenario.annual_savings | default(0)) }}</strong></div>
+                                <div><span style="color: var(--gray);">Carbon Reduction:</span> <strong style="color: var(--primary);">{{ scenario.carbon_reduction | default(0) }} tCO₂e/yr</strong></div>
+                                <div><span style="color: var(--gray);">Payback:</span> <strong>{{ scenario.payback_years | default('N/A') }} years</strong></div>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.875rem;">
+                                {% set display_roi = scenario.roi_percent | default(scenario.roi | default(0)) %}
+                                ROI: <strong style="{% if display_roi > 20 %}color: var(--success);{% elif display_roi > 10 %}color: var(--warning);{% else %}color: var(--gray);{% endif %}">{{ display_roi }}%</strong>
+                                {% if display_roi > 25 %}
+                                    <span style="font-size: 0.75rem; color: var(--success); margin-left: 0.5rem;"><i class="fas fa-star"></i> Excellent ROI</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 1rem;">
+                        <h4 style="margin-bottom: 1rem;">ROI Comparison</h4>
+                        <div style="height: 300px;"><canvas id="roiChart"></canvas></div>
+                        <div style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas fa-chart-line" style="color: var(--success);"></i>
+                                <strong style="color: var(--success);">10-Year Projection</strong>
+                            </div>
+                            <p style="margin: 0; font-size: 0.875rem; color: var(--gray);">
+                                Total Savings: <strong>₹{{ "{:,.0f}".format(result.ten_year_savings | default(0)) }}</strong><br>
+                                Carbon Reduced: <strong>{{ result.ten_year_reduction | default(0) }} tCO₂e</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compliance Summary -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;"><i class="fas fa-file-contract" style="color: var(--dark);"></i> GHG Protocol Compliance Summary</h3>
+                <div class="grid grid-4" style="text-align: center;">
+                    <div><div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{ result.total }}</div><div style="color: var(--gray); font-size: 0.875rem;">Total tCO₂e</div></div>
+                    <div><div style="font-size: 2rem; font-weight: 700; color: var(--danger);">{{ result.scope1 }}</div><div style="color: var(--gray); font-size: 0.875rem;">Direct</div></div>
+                    <div><div style="font-size: 2rem; font-weight: 700; color: var(--warning);">{{ result.scope2 }}</div><div style="color: var(--gray); font-size: 0.875rem;">Electricity</div></div>
+                    <div><div style="font-size: 2rem; font-weight: 700; color: var(--secondary);">{{ result.scope3 }}</div><div style="color: var(--gray); font-size: 0.875rem;">Indirect</div></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        // Scope Pie Chart
+        new Chart(document.getElementById('scopeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Scope 1 (Direct)', 'Scope 2 (Electricity)', 'Scope 3 (Indirect)'],
+                datasets: [{ data: {{ result.by_scope | default([0,0,0]) }}, backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6'], borderWidth: 0 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // Source Bar Chart
+        new Chart(document.getElementById('sourceChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ result.by_source.keys() | list | default([]) | tojson }},
+                datasets: [{ label: 'tCO₂e', data: {{ result.by_source.values() | list | default([]) | tojson }}, backgroundColor: ['#f59e0b', '#ef4444', '#dc2626', '#059669', '#0ea5e9', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#10b981'], borderRadius: 6 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+
+        // Cost Chart
+        new Chart(document.getElementById('costChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ result.carbon_costs_by_source.keys() | list | default([]) | tojson }},
+                datasets: [{ label: 'Carbon Cost (₹)', data: {{ result.carbon_costs_by_source.values() | list | default([]) | tojson }}, backgroundColor: '#8b5cf6', borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => '₹' + v } } } }
+        });
+
+        // ROI Chart - Using safely prepared data
+        new Chart(document.getElementById('roiChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ scenario_names | tojson }},
+                datasets: [{ label: 'ROI %', data: {{ scenario_rois | tojson }}, backgroundColor: ['#059669', '#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1'], borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>
